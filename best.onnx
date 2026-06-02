@@ -1,8 +1,0 @@
-# Run this inside your Jupyter Notebook training environment
-from ultralytics import YOLO
-
-# Load your best trained model (update the path to your actual trained .pt file)
-model = YOLO('runs/detect/train/weights/best.pt') 
-
-# Export to ONNX format
-model.export(format='onnx')
