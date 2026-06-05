@@ -1,0 +1,5 @@
+from ultralytics import YOLO
+
+model = YOLO("rice_ams_wms/models/best.pt")
+
+print("Custom Model Loaded Successfully")

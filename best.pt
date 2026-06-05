@@ -1,0 +1,6 @@
+import os
+
+for root, dirs, files in os.walk("rice_ams_wms"):
+    for file in files:
+        if file.endswith(".pt"):
+            print(os.path.join(root, file))

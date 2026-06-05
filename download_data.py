@@ -18,3 +18,17 @@ project_damage = rf.workspace("your-workspace").project("gunny-bag-damage")
 dataset_damage = project_damage.version(1).download("yolov8")
 
 print("✅ Roboflow datasets successfully downloaded into the datasets/ folder!")
+from ultralytics import YOLO
+import shutil
+import os
+
+# Download pretrained YOLO model
+model = YOLO("yolov8n.pt")
+
+# Create models folder if missing
+os.makedirs("models", exist_ok=True)
+
+# Copy model as best.pt
+shutil.copy("yolov8n.pt", "models/best.pt")
+
+print("best.pt created successfully")
