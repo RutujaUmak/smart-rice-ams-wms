@@ -1,64 +1,131 @@
 import streamlit as st
-import cv2
-import numpy as np
-import os
 from ultralytics import YOLO
+from pathlib import Path
+import numpy as np
+import cv2
 
-# --- CONFIGURATION ---
-# Ensure this path matches the EXACT location of your valid best.pt file
-MODEL_PATH = r"C:\Users\ASUS\Documents\AI\smart_rice_system\models\best.pt"
+# ---------------------------------
+# PAGE CONFIG
+# ---------------------------------
+st.set_page_config(
+    page_title="Gunny Bag Counting",
+    page_icon="📦",
+    layout="wide"
+)
 
+# ---------------------------------
+# MODEL PATH
+# ---------------------------------
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = BASE_DIR / "models" / "best.pt"
+
+# ---------------------------------
+# LOAD MODEL
+# ---------------------------------
 @st.cache_resource
-def get_model():
-    """Safely load the model, checking if the file is valid."""
-    if not os.path.exists(MODEL_PATH):
-        st.error(f"Error: Model not found at {MODEL_PATH}")
-        return None
-    
-    # Basic check to ensure file is not a text/html file
-    if os.path.getsize(MODEL_PATH) < 1000000:
-        st.error("Error: The file 'best.pt' is corrupted or too small. Please replace it with a valid training weight file.")
-        return None
-    
-    try:
-        return YOLO(MODEL_PATH)
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+def load_model():
 
-# --- UI SETUP ---
-st.title("Module 5: Gunny Bag Counting & Quality")
-model = get_model()
+    if not MODEL_PATH.exists():
+        st.error(f"Model not found:\n{MODEL_PATH}")
+        st.stop()
 
-if model:
-    uploaded_file = st.file_uploader("Upload an unloading bay snapshot...", type=["jpg", "png"])
+    return YOLO(str(MODEL_PATH))
 
-    if uploaded_file:
-        # Convert image for YOLO
-        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-        img = cv2.imdecode(file_bytes, 1)
-        
-        # Perform Prediction
-        results = model.predict(source=img, conf=0.3)
-        
-        # Analytics Logic
-        quality_counts = {'Healthy': 0, 'Damaged': 0, 'Wet': 0, 'Torn': 0}
-        
-        for r in results:
-            for box in r.boxes:
-                cls_id = int(box.cls[0])
-                label = model.names[cls_id]
-                if label in quality_counts:
-                    quality_counts[label] += 1
-                
-        # Display Results
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Healthy", quality_counts['Healthy'])
-        col2.metric("Damaged", quality_counts['Damaged'])
-        col3.metric("Wet", quality_counts['Wet'])
-        col4.metric("Torn", quality_counts['Torn'])
-        
-        # Show annotated image
-        st.image(results[0].plot(), caption="Detection Results", use_column_width=True)
-else:
-    st.warning("Model failed to load. Please fix the path or file corruption issue in your 'models' folder.")
+model = load_model()
+
+# ---------------------------------
+# TITLE
+# ---------------------------------
+st.title("📦 Gunny Bag Counting System")
+
+st.write("Upload an image to count gunny bags.")
+
+# ---------------------------------
+# UPLOAD IMAGE
+# ---------------------------------
+uploaded_file = st.file_uploader(
+    "Upload Image",
+    type=["jpg", "jpeg", "png"]
+)
+
+# ---------------------------------
+# PREDICTION
+# ---------------------------------
+if uploaded_file is not None:
+
+    file_bytes = np.asarray(
+        bytearray(uploaded_file.read()),
+        dtype=np.uint8
+    )
+
+    image = cv2.imdecode(
+        file_bytes,
+        cv2.IMREAD_COLOR
+    )
+
+    st.subheader("Uploaded Image")
+
+    st.image(
+        cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
+        use_container_width=True
+    )
+
+    with st.spinner("Detecting Gunny Bags..."):
+
+        results = model.predict(
+            source=image,
+            conf=0.25,
+            verbose=False
+        )
+
+    result = results[0]
+
+    # Count bags
+    total_bags = len(result.boxes)
+
+    # Draw boxes
+    annotated_image = result.plot()
+
+    # ---------------------------------
+    # RESULTS
+    # ---------------------------------
+    st.success(f"Total Gunny Bags Detected: {total_bags}")
+
+    st.metric(
+        label="📦 Total Bags",
+        value=total_bags
+    )
+
+    st.subheader("Detection Result")
+
+    st.image(
+        annotated_image,
+        channels="BGR",
+        use_container_width=True
+    )
+
+    # ---------------------------------
+    # DETECTION DETAILS
+    # ---------------------------------
+    if total_bags > 0:
+
+        st.subheader("Detection Details")
+
+        for i, box in enumerate(result.boxes):
+
+            confidence = float(box.conf[0])
+
+            st.write(
+                f"Bag {i+1} | Confidence: {confidence:.2f}"
+            )
+
+# ---------------------------------
+# DEBUG INFO
+# ---------------------------------
+with st.expander("Debug Info"):
+
+    st.write("Model Path:", MODEL_PATH)
+    st.write("Model Exists:", MODEL_PATH.exists())
+
+    if MODEL_PATH.exists():
+        st.write("Classes:", model.names)
