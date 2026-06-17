@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['Counting  industry - v1 2024-06-18 6-04am']
+
+roboflow:
+  workspace: rutujas-workspace-snwbc
+  project: gunny-bags-ggndq-hhusp
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/rutujas-workspace-snwbc/gunny-bags-ggndq-hhusp/dataset/2

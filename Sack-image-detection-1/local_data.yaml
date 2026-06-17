@@ -1,9 +1,0 @@
-
-    path: C:\Users\ASUS\Documents\AI\smart_rice_system\database\Sack-image-detection-1
-    train: train
-    val: valid
-    test: test
-
-    names:
-      0: Sack
-    
